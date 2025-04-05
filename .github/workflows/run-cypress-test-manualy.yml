@@ -6,7 +6,7 @@ on:
       url:
         required: true
         description: What url will be used?
-        default: 'http://www.swtestacademy.com'
+        default: "http://www.swtestacademy.com"
 
 jobs:
   e2e:
@@ -34,14 +34,14 @@ jobs:
           npm install
 
       - name: Cache Cypress binary
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cache/Cypress
           key: ${{ runner.os }}-cypress-${{ hashFiles('**/cypress.json') }}
           restore-keys: |
-            ${{ runner.os }}-cypress-    
-        
+            ${{ runner.os }}-cypress-
+
       - name: Run cypress
         env:
           URL: ${{github.event.inputs.url}}
@@ -60,7 +60,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.24.0
         if: failure()
         with:
-          payload: | 
+          payload: |
             {
               "text": "GitHub Action build result: ${{ job.status }}\n ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
