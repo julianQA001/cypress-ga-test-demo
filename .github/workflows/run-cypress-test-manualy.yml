@@ -7,20 +7,24 @@ on:
         required: true
         description: What url will be used?
         default: "http://www.swtestacademy.com"
-      browser:
+      browsers:
         required: true
-        description: Which browser to use for testing?
+        description: Which browsers to use for testing? (Multiple selection allowed)
         type: choice
         options:
           - chrome
           - firefox
           - edge
         default: "chrome"
+        multiple: true
 
 jobs:
   e2e:
     name: e2e tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: ${{ fromJSON(github.event.inputs.browsers) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3.3.0
@@ -52,13 +56,13 @@ jobs:
           URL: ${{github.event.inputs.url}}
         run: |
           cd test
-          npx cypress run --browser ${{github.event.inputs.browser}}
+          npx cypress run --browser ${{matrix.browser}}
 
       - name: Screenshot Upload
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: cypress-screenshots
+          name: cypress-screenshots-${{matrix.browser}}
           path: test/screenshots
 
       - name: Publish results to Slack if Test Fails
@@ -67,7 +71,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "GitHub Action build result: ${{ job.status }}\n ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "text": "GitHub Action build result: ${{ job.status }}\nBrowser: ${{matrix.browser}}\nURL: ${{github.event.inputs.url}}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEB_HOOK }}
