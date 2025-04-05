@@ -7,16 +7,18 @@ on:
         required: true
         description: What url will be used?
         default: "http://www.swtestacademy.com"
-      browsers:
-        required: true
-        description: Which browsers to use for testing? (Multiple selection allowed)
-        type: choice
-        options:
-          - chrome
-          - firefox
-          - edge
-        default: "chrome"
-        multiple: true
+      chrome:
+        type: boolean
+        description: Run tests in Chrome
+        default: true
+      firefox:
+        type: boolean
+        description: Run tests in Firefox
+        default: false
+      edge:
+        type: boolean
+        description: Run tests in Edge
+        default: false
 
 jobs:
   e2e:
@@ -24,7 +26,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        browser: ${{ fromJSON(github.event.inputs.browsers) }}
+        browser: >-
+          [
+            ${{ github.event.inputs.chrome == 'true' && 'chrome' || '' }},
+            ${{ github.event.inputs.firefox == 'true' && 'firefox' || '' }},
+            ${{ github.event.inputs.edge == 'true' && 'edge' || '' }}
+          ]
+        exclude:
+          - browser: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v3.3.0
