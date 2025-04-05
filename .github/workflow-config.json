@@ -1,0 +1,7 @@
+{
+  "team": "chapter-testing-notifications",
+  "channels": {
+    "team": "URL"
+  },
+  "node-version": "16.x"
+}

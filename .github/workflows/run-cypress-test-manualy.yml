@@ -1,0 +1,68 @@
+name: Manual run Cypress Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        required: true
+        description: What url will be used?
+        default: 'http://www.swtestacademy.com'
+
+jobs:
+  e2e:
+    name: e2e tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chrome, firefox]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.3.0
+
+      - name: Setup node
+        uses: actions/setup-node@v3.6.0
+        with:
+          node-version: "16.x"
+
+      - name: Install yarn
+        run: npm i -g yarn
+
+      - name: Install dependencies
+        run: |
+          cd test
+          npm install
+
+      - name: Cache Cypress binary
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/Cypress
+          key: ${{ runner.os }}-cypress-${{ hashFiles('**/cypress.json') }}
+          restore-keys: |
+            ${{ runner.os }}-cypress-    
+        
+      - name: Run cypress
+        env:
+          URL: ${{github.event.inputs.url}}
+        run: |
+          cd test
+          npx cypress run --browser ${{matrix.browser}}
+
+      - name: Screenshot Upload
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: test/screenshots
+
+      - name: Publish results to Slack if Test Fails
+        uses: slackapi/slack-github-action@v1.24.0
+        if: failure()
+        with:
+          payload: | 
+            {
+              "text": "GitHub Action build result: ${{ job.status }}\n ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEB_HOOK }}
