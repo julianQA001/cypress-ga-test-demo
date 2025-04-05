@@ -21,20 +21,10 @@ on:
         default: false
 
 jobs:
-  e2e:
-    name: e2e tests
+  chrome:
+    name: Chrome Tests
+    if: ${{ github.event.inputs.chrome == 'true' }}
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - browser: chrome
-            enabled: ${{ github.event.inputs.chrome == 'true' }}
-          - browser: firefox
-            enabled: ${{ github.event.inputs.firefox == 'true' }}
-          - browser: edge
-            enabled: ${{ github.event.inputs.edge == 'true' }}
-    if: ${{ matrix.enabled }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3.3.0
@@ -66,13 +56,13 @@ jobs:
           URL: ${{github.event.inputs.url}}
         run: |
           cd test
-          npx cypress run --browser ${{matrix.browser}}
+          npx cypress run --browser chrome
 
       - name: Screenshot Upload
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: cypress-screenshots-${{matrix.browser}}
+          name: cypress-screenshots-chrome
           path: test/screenshots
 
       - name: Publish results to Slack if Test Fails
@@ -81,7 +71,117 @@ jobs:
         with:
           payload: |
             {
-              "text": "GitHub Action build result: ${{ job.status }}\nBrowser: ${{matrix.browser}}\nURL: ${{github.event.inputs.url}}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "text": "GitHub Action build result: ${{ job.status }}\nBrowser: chrome\nURL: ${{github.event.inputs.url}}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEB_HOOK }}
+
+  firefox:
+    name: Firefox Tests
+    if: ${{ github.event.inputs.firefox == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.3.0
+
+      - name: Setup node
+        uses: actions/setup-node@v3.6.0
+        with:
+          node-version: "16.x"
+
+      - name: Install yarn
+        run: npm i -g yarn
+
+      - name: Install dependencies
+        run: |
+          cd test
+          npm install
+
+      - name: Cache Cypress binary
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/Cypress
+          key: ${{ runner.os }}-cypress-${{ hashFiles('**/cypress.json') }}
+          restore-keys: |
+            ${{ runner.os }}-cypress-
+
+      - name: Run cypress
+        env:
+          URL: ${{github.event.inputs.url}}
+        run: |
+          cd test
+          npx cypress run --browser firefox
+
+      - name: Screenshot Upload
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots-firefox
+          path: test/screenshots
+
+      - name: Publish results to Slack if Test Fails
+        uses: slackapi/slack-github-action@v1.24.0
+        if: failure()
+        with:
+          payload: |
+            {
+              "text": "GitHub Action build result: ${{ job.status }}\nBrowser: firefox\nURL: ${{github.event.inputs.url}}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEB_HOOK }}
+
+  edge:
+    name: Edge Tests
+    if: ${{ github.event.inputs.edge == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.3.0
+
+      - name: Setup node
+        uses: actions/setup-node@v3.6.0
+        with:
+          node-version: "16.x"
+
+      - name: Install yarn
+        run: npm i -g yarn
+
+      - name: Install dependencies
+        run: |
+          cd test
+          npm install
+
+      - name: Cache Cypress binary
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/Cypress
+          key: ${{ runner.os }}-cypress-${{ hashFiles('**/cypress.json') }}
+          restore-keys: |
+            ${{ runner.os }}-cypress-
+
+      - name: Run cypress
+        env:
+          URL: ${{github.event.inputs.url}}
+        run: |
+          cd test
+          npx cypress run --browser edge
+
+      - name: Screenshot Upload
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots-edge
+          path: test/screenshots
+
+      - name: Publish results to Slack if Test Fails
+        uses: slackapi/slack-github-action@v1.24.0
+        if: failure()
+        with:
+          payload: |
+            {
+              "text": "GitHub Action build result: ${{ job.status }}\nBrowser: edge\nURL: ${{github.event.inputs.url}}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEB_HOOK }}
